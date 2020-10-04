@@ -1,101 +1,48 @@
 package org.notima.api.fortnox;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.ByteBuffer;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import javax.xml.bind.JAXB;
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.XMLGregorianCalendar;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.client.methods.*;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.protocol.HTTP;
+import org.apache.http.ssl.SSLContexts;
+import org.apache.http.ssl.TrustStrategy;
 import org.apache.http.util.EntityUtils;
 import org.notima.api.fortnox.clients.FortnoxClientInfo;
 import org.notima.api.fortnox.clients.FortnoxClientList;
-import org.notima.api.fortnox.entities3.Account;
-import org.notima.api.fortnox.entities3.AccountSubset;
-import org.notima.api.fortnox.entities3.Accounts;
-import org.notima.api.fortnox.entities3.Article;
-import org.notima.api.fortnox.entities3.Articles;
-import org.notima.api.fortnox.entities3.Authorization;
-import org.notima.api.fortnox.entities3.CompanySetting;
-import org.notima.api.fortnox.entities3.Customer;
-import org.notima.api.fortnox.entities3.CustomerSubset;
-import org.notima.api.fortnox.entities3.Customers;
-import org.notima.api.fortnox.entities3.ErrorInformation;
-import org.notima.api.fortnox.entities3.FinancialYearSubset;
-import org.notima.api.fortnox.entities3.FinancialYears;
-import org.notima.api.fortnox.entities3.FortnoxFile;
-import org.notima.api.fortnox.entities3.Invoice;
-import org.notima.api.fortnox.entities3.InvoicePayment;
-import org.notima.api.fortnox.entities3.InvoiceRow;
-import org.notima.api.fortnox.entities3.InvoiceSubset;
-import org.notima.api.fortnox.entities3.Invoices;
-import org.notima.api.fortnox.entities3.LockedPeriod;
-import org.notima.api.fortnox.entities3.ModeOfPayment;
-import org.notima.api.fortnox.entities3.ModeOfPaymentSubset;
-import org.notima.api.fortnox.entities3.ModesOfPayments;
-import org.notima.api.fortnox.entities3.Order;
-import org.notima.api.fortnox.entities3.Orders;
-import org.notima.api.fortnox.entities3.PreDefinedAccount;
-import org.notima.api.fortnox.entities3.PreDefinedAccountSubset;
-import org.notima.api.fortnox.entities3.PreDefinedAccounts;
-import org.notima.api.fortnox.entities3.Price;
-import org.notima.api.fortnox.entities3.PriceList;
-import org.notima.api.fortnox.entities3.PriceLists;
-import org.notima.api.fortnox.entities3.Prices;
-import org.notima.api.fortnox.entities3.Supplier;
-import org.notima.api.fortnox.entities3.SupplierSubset;
-import org.notima.api.fortnox.entities3.Suppliers;
-import org.notima.api.fortnox.entities3.TermsOfDelivery;
-import org.notima.api.fortnox.entities3.TermsOfDeliveries;
-import org.notima.api.fortnox.entities3.TermsOfPayment;
-import org.notima.api.fortnox.entities3.TermsOfPayments;
-import org.notima.api.fortnox.entities3.Voucher;
-import org.notima.api.fortnox.entities3.VoucherFileConnection;
-import org.notima.api.fortnox.entities3.VoucherSeries;
-import org.notima.api.fortnox.entities3.VoucherSeriesCollection;
-import org.notima.api.fortnox.entities3.VoucherSeriesSubset;
+import org.notima.api.fortnox.entities3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLContext;
+import javax.xml.bind.JAXB;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.XMLGregorianCalendar;
+import java.io.*;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.ByteBuffer;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Client class for communicating with Fortnox.
@@ -275,49 +222,18 @@ public class FortnoxClient3 {
 	 * Flag to say if articles should be used on invoices / orders
 	 */
 	private boolean		useArticles = true;
-	
-	/**
-	 * Create FortnoxClient using default configuration file (if found).
-	 * 
-	 * Configuration file can be set using
-	 * 
-	 * -DFortnox4JFile=//file
-	 * 
-	 * or environment variable
-	 * 
-	 * export FORTNOX4JFILE=//file
-	 * 
-	 * NOTE: If the above environment variables are set and valid they will be used if this constructor 
-	 * 		 is called. If you want to specify accessToken and clientSecret programmatically, 
-	 * 		 use {@link FortnoxClient3#FortnoxClient3(String, String)}
-	 * 
-	 */
-	public FortnoxClient3() {
-		try {
-			initFromFile(null);
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-		}
-	}
-	
+
+	private final CloseableHttpClient httpClient;
+
 	/**
 	 * Create FortnoxClient using specified accessToken and clientSecret.
 	 * 
 	 * @param accessToken			The accessToken to use.
 	 * @param clientSecret			The clientSecret.
 	 */
-	public FortnoxClient3(String accessToken, String clientSecret) {
+	public FortnoxClient3(CloseableHttpClient httpClient, String accessToken, String clientSecret) {
+		this.httpClient = httpClient;
 		setAccessToken(accessToken, clientSecret);
-	}
-	
-	/**
-	 * Create FortnoxClient using specified configuration file.
-	 * 
-	 * @param configFile		The configuration file to use.
-	 * @throws IOException		If something goes wrong when reading the file. 
-	 */
-	public FortnoxClient3(String configFile) throws IOException {
-		initFromFile(configFile);
 	}
 
 	/**
@@ -333,66 +249,7 @@ public class FortnoxClient3 {
 		return false;
 	}
 	
-	/**
-	 * Read client parameters from file (if found).
-	 * 
-	 * @param configFile
-	 * @throws IOException 
-	 */
-	private void initFromFile(String configFile) throws IOException {
-		
-		if (configFile==null || configFile.trim().length()==0) {
-			// Try system properties
-			String defaultFile = System.getProperty("Fortnox4JFile");
-			if (defaultFile==null) {
-				// Try environment
-				defaultFile = System.getenv(ENV_CONFIG_FILE);
-			}
-			if (defaultFile!=null) {
-				configFile = defaultFile;
-				logger.debug("Trying config from environment: {}", configFile);
-			}
-		}
-		
-		// First check if this resolves to a file right away
-		File f = configFile!=null ? new File(configFile) : null;
-		if (f!=null && !f.exists()) {
-			// Try to resolve from classpath
-			URL url = ClassLoader.getSystemResource(configFile);
-			if (url!=null) {
-				f = new File(url.getFile());
-			} else {
-				f = null;
-			}
-			if (f==null || !f.exists()) {
-				logger.warn("Configuration file {} not found.", configFile);
-				return; // Don't configure from file.
-			}
-		}
 
-		if (f==null) {
-			logger.debug("Not using configuration file to init FortnoxClient");
-			return;
-		}
-		
-		try {
-			logger.debug("Using configuration file {}.", configFile);
-			clientList = FortnoxUtil.readFortnoxClientListFromFile(configFile);
-		} catch (Exception e) {
-			logger.error("Problem with reading configuration file {}.", configFile);
-			e.printStackTrace();
-			return;
-		}
-
-		FortnoxClientInfo fc = clientList.getFirstClient();
-		
-		String clientSecret = fc.getClientSecret();
-		String accessToken = fc.getAccessToken();
-		
-		setAccessToken(accessToken, clientSecret);
-		
-		
-	}
 	
 	/**
 	 * 
@@ -491,9 +348,7 @@ public class FortnoxClient3 {
 		ByteBuffer result = null;
 		
 		rateLimit();
-		
-		CloseableHttpClient httpClient = HttpClients.createDefault();
-		
+
 		// Create url
 		String urlStr = m_baseUrl;
 		if (cmd!=null)
@@ -607,8 +462,7 @@ public class FortnoxClient3 {
 		
 		rateLimit();
 		
-		CloseableHttpClient httpClient = HttpClients.createDefault();
-		
+
 		// Create url
 		String urlStr = m_baseUrl;
 		if (cmd!=null)
@@ -2652,48 +2506,6 @@ public class FortnoxClient3 {
 		return true;
 	}
 
-	public static void main(String[] args) {
-		
-		if (args==null || args.length!=2) {
-			System.out.println("Usage: FortnoxClient3 configfile command");
-			System.out.println("");
-			System.out.println("Possible commands are: getAccessToken");
-			System.exit(1);
-		}
-		
-		File configFile = new File(args[0]);
-		if (!configFile.exists() || configFile.isDirectory()) {
-			System.out.println(args[0] + " is not a configuration file.");
-			System.exit(1);
-		}
-		
-		if ("getAccessToken".equalsIgnoreCase(args[1])) {
-			
-			try {
-			
-				FortnoxClientList clientList = FortnoxUtil.readFortnoxClientListFromFile(configFile.getCanonicalPath());				
-
-				FortnoxClientInfo fc = clientList.getFirstClient();
-				
-				String clientSecret = fc.getClientSecret();
-				String authCode = fc.getApiCode();
-
-				FortnoxClient3 client = new FortnoxClient3();
-				String accessToken = client.getAccessToken(authCode, clientSecret);
-				System.out.println("Got access token:");
-				System.out.println(accessToken);
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			
-		} else {
-			System.out.println(args[1] + ": unknown command.");
-			System.exit(1);
-		}
-		
-	}
 
 	/**
 	 * Search document and field.
@@ -2792,9 +2604,7 @@ public class FortnoxClient3 {
 	public FortnoxFile uploadFile(String file, String folderId) throws Exception {
 		
 		FortnoxFile of = null;
-		
-		CloseableHttpClient httpclient = HttpClients.createDefault();
-		
+
 		File f = new File(file);
 		// Build multipart upload request
 		HttpEntity data = MultipartEntityBuilder.create()
@@ -2824,7 +2634,7 @@ public class FortnoxClient3 {
 
 		registerCall();
 		
-		StringBuffer result = new StringBuffer(httpclient.execute(request, responseHandler));
+		StringBuffer result = new StringBuffer(httpClient.execute(request, responseHandler));
 		
 		ErrorInformation e = checkIfError(result);
 		
